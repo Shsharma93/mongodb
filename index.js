@@ -17,14 +17,44 @@ mongoose
 //  nin - (not in)
 
 const moviesSchema = mongoose.Schema({
-  name: String,
-  tags: [String],
+  name: {
+    type: String,
+    required: true,
+    minlength: 5,
+    maxlength: 255
+    // match: /pattern/
+  },
+  // category: {
+  //   type: String,
+  //   enum: ['Drama', 'Thriller', 'Bollywood', 'Fantasy'],
+  //   required: true,
+  //   lowercase: true,
+  //   upppercase: true,
+  //   trim: true
+  // },
+  tags: {
+    type: Array,
+    validate: {
+      isAsync: true,
+      validator: (v, callback) => {
+        setTimeout(() => {
+          const result = v.length > 0;
+          callback(result);
+        }, 4000);
+      },
+      message: 'A course should have at least one tag.'
+    }
+  },
   date: { type: Date, default: Date.now },
   isReleased: { type: Boolean, required: true },
   duration: Number,
-  year: Number,
+  year: { type: Number, min: 1950, max: 2019 },
   director: String,
-  ratings: Number
+  ratings: {
+    type: Number
+    // get: v => Math.round(v),
+    // set: v => Math.round(v)
+  }
 });
 
 const Movies = mongoose.model('Movies', moviesSchema);
@@ -32,16 +62,23 @@ const Movies = mongoose.model('Movies', moviesSchema);
 createMovie = async () => {
   const movie = new Movies({
     name: 'Bajirao Mastani',
-    tags: ['Drama', 'Bollywood'],
-    isReleased: true,
+    //category: '-',
+    tags: [],
+    //isReleased: true,
     duration: 158,
     year: 2015,
     director: 'Sanjay Leela Bhansali',
     ratings: 7.2
   });
 
-  const result = await movie.save();
-  console.log(result);
+  try {
+    const result = await movie.save();
+    console.log(result);
+  } catch (ex) {
+    for (fields in ex.errors) {
+      console.log(ex.errors[fields].message);
+    }
+  }
 };
 
 //  Logical Operator
@@ -49,7 +86,7 @@ createMovie = async () => {
 //  and
 
 getMovie = async () => {
-  const movie = await Movies.find()
+  Movies.find()
     //  .find({tags: { $in: 'Crime' },duration: { $gt: 120 }})
     // .find({ name: 'Dangal' })
     // .find({ price: 10 }) // only 10
@@ -63,8 +100,9 @@ getMovie = async () => {
     //.limit(10)
     .sort({ year: 1 })
     .select({ name: 1, director: 1, tags: 1, year: 1 })
-    .count();
-  console.log(movie);
+    .count()
+    .then(data => console.log(data));
+  // console.log(movie);
 };
 
 updateMovieQuery = async id => {
@@ -99,8 +137,8 @@ deleteMovie = async id => {
   console.log(movie);
 };
 
-//createMovie();
-getMovie();
+createMovie();
+//getMovie();
 //updateMovieQuery('5ce28aa14c5b2962833b9507');
 //updateMovie('5ce28aa14c5b2962833b9507');
 //deleteMovie('5ce29b18fdd8066b396f4b75');
